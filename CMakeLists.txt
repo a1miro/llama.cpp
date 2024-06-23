@@ -32,6 +32,7 @@ else()
     endif()
 endif()
 
+# Add oneMKL library and include path
 
 #
 # Option list
@@ -131,7 +132,7 @@ set(LLAMA_METAL_STD "" CACHE STRING          "llama: metal standard version (-st
 option(LLAMA_KOMPUTE                         "llama: use Kompute"                               OFF)
 option(LLAMA_RPC                             "llama: use RPC"                                   OFF)
 option(LLAMA_OPENMP                          "llama: use OpenMP"                                ON)
-option(LLAMA_SYCL                            "llama: use SYCL"                                  OFF)
+option(LLAMA_SYCL                            "llama: use SYCL"                                  ON)
 option(LLAMA_SYCL_F16                        "llama: use 16 bit floats for sycl calculations"   OFF)
 set(LLAMA_SYCL_TARGET   "INTEL" CACHE STRING "llama: sycl target device")
 option(LLAMA_CPU_HBM                         "llama: use memkind for CPU HBM"                   OFF)
@@ -1272,15 +1273,19 @@ add_library(ggml OBJECT
 
 target_include_directories(ggml PUBLIC . ${LLAMA_EXTRA_INCLUDES})
 target_compile_features   (ggml PUBLIC c_std_11) # don't bump
-
-target_link_libraries(ggml PUBLIC Threads::Threads ${LLAMA_EXTRA_LIBS})
+target_include_directories(ggml PRIVATE /opt/oneMKL/include)
+target_link_directories(ggml PRIVATE /opt/oneMKL/lib)
+target_link_libraries(ggml PUBLIC Threads::Threads ${LLAMA_EXTRA_LIBS} onemkl)
 
 add_library(ggml_static STATIC $<TARGET_OBJECTS:ggml>)
 
 if (BUILD_SHARED_LIBS)
     set_target_properties(ggml PROPERTIES POSITION_INDEPENDENT_CODE ON)
     add_library(ggml_shared SHARED $<TARGET_OBJECTS:ggml>)
-    target_link_libraries(ggml_shared PUBLIC Threads::Threads ${LLAMA_EXTRA_LIBS})
+    target_include_directories(ggml PRIVATE /opt/oneMKL/include)
+    target_link_directories(ggml PRIVATE /opt/oneMKL/lib)
+
+    target_link_libraries(ggml_shared PUBLIC Threads::Threads ${LLAMA_EXTRA_LIBS} onemkl)
     install(TARGETS ggml_shared LIBRARY)
 endif()
 
@@ -1297,9 +1302,14 @@ add_library(llama
 target_include_directories(llama PUBLIC .)
 target_compile_features   (llama PUBLIC cxx_std_11) # don't bump
 
+target_include_directories(llama PRIVATE /opt/oneMKL/include)
+target_link_directories(llama PRIVATE /opt/oneMKL/lib)
+
 target_link_libraries(llama PRIVATE
     ggml
     ${LLAMA_EXTRA_LIBS}
+    onemkl_blas_cublas
+    onemkl
     )
 
 if (BUILD_SHARED_LIBS)

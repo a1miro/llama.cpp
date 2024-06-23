@@ -1,5 +1,7 @@
 set(TARGET llama-gguf)
 add_executable(${TARGET} gguf.cpp)
 install(TARGETS ${TARGET} RUNTIME)
-target_link_libraries(${TARGET} PRIVATE ggml ${CMAKE_THREAD_LIBS_INIT})
+target_link_directories(${TARGET} PRIVATE /opt/oneMKL/lib)
+target_include_directories(${TARGET} PRIVATE /opt/oneMKL/include)
+target_link_libraries(${TARGET} PRIVATE ggml ${CMAKE_THREAD_LIBS_INIT}  onemkl_blas_cublas)
 target_compile_features(${TARGET} PRIVATE cxx_std_11)
